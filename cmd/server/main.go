@@ -18,6 +18,9 @@ func main() {
 
 	//connect to database
 	db.InitDB(cfg)
+	
+	//migration
+	db.RunMigrations(db.DB) 
 	// Create Chi router
 	r := chi.NewRouter()
 
