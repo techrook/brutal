@@ -9,12 +9,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"brutal/internal/config"
+	"brutal/internal/db"
 )
 
 func main() {
 	// Load config from .env
 	cfg := config.LoadConfig()
 
+	//connect to database
+	db.InitDB(cfg)
 	// Create Chi router
 	r := chi.NewRouter()
 

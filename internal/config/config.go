@@ -13,6 +13,11 @@ type Config struct {
 	ServerPort string
 	AppName    string
 	AppEnv     string
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
 }
 
 // LoadConfig reads .env and returns Config
@@ -27,6 +32,11 @@ func LoadConfig() *Config {
 		ServerPort: getEnv("SERVER_PORT", "8080"),
 		AppName:    getEnv("APP_NAME", "Brutal"),
 		AppEnv:     getEnv("APP_ENV", "development"),
+		DBHost:     getEnv("DB_HOST", "localhost"),
+		DBPort:     getEnv("DB_PORT", "5433"),     // ← confirm this
+		DBUser:     getEnv("DB_USER", "dev"),
+		DBPassword: getEnv("DB_PASSWORD", "devpass"),
+		DBName:     getEnv("DB_NAME", "brutal"),
 	}
 }
 
