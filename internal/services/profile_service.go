@@ -3,6 +3,8 @@ package services
 import (
 	"brutal/internal/db"
 	"brutal/internal/models"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -12,10 +14,16 @@ func NewProfileService() *ProfileService {
 	return &ProfileService{}
 }
 
-func (s *ProfileService) CreateProfile(handle, title, description string) (*models.Profile, error){
+func (s *ProfileService) CreateProfile(handle, title, description string) (*models.Profile, error) {
+
+	handle = strings.ToLower(strings.TrimSpace(handle))
+	if len(handle) < 3 {
+		return nil, fmt.Errorf("handle must be at least 3 characters")
+	}
+
 	profile := &models.Profile{
-		ID:            "",
-		Handle:      handle,
+		ID:          "",
+		Handle:      handle, // now guaranteed lowercase
 		Title:       title,
 		Description: description,
 		IsActive:    true,
@@ -45,6 +53,9 @@ func (s *ProfileService) CreateProfile(handle, title, description string) (*mode
 }
 
 func (s *ProfileService) GetProfileByHandle(handle string) (*models.Profile, error) {
+	
+	handle = strings.ToLower(strings.TrimSpace(handle))
+
 	var profile models.Profile
 	query := "SELECT * FROM profiles WHERE handle = $1 AND is_active = true"
 	err := db.DB.Get(&profile, query, handle)
