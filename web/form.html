@@ -4,41 +4,174 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Send to {{.Handle}}</title>
+  <title>Send to {{.Handle}} — Brutal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 60px auto; padding: 0 20px; }
-    h1 { text-align: center; margin-bottom: 20px; }
-    textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; margin: 10px 0; }
-    button { width: 100%; padding: 12px; background: #000; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    button:hover { background: #333; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+      padding: 40px 30px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      padding: 16px;
+      margin: 10px 0;
+      border: 2px solid #f0f0f0;
+      border-radius: 16px;
+      font-size: 16px;
+      font-family: inherit;
+      resize: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      opacity: 0.95;
+    }
+
+    .message {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .message.error {
+      display: block;
+      background: #fdf2f2;
+      color: #d32f2f;
+      border: 1px solid #f2c4c4;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Send a message to {{.Handle}}</h1>
-  <form id="messageForm">
-    <textarea name="content" placeholder="Your anonymous message..." required></textarea>
-    <button type="submit">Send 💬</button>
-  </form>
+  <div class="container">
+    <h1>Send a message to {{.Handle}}</h1>
+    <form id="messageForm">
+      <textarea name="content" placeholder="Your anonymous message... Be honest, be kind 💬" required></textarea>
+      <button type="submit">Send Truth</button>
+    </form>
+    <div id="message" class="message"></div>
+  </div>
 
   <script>
     document.getElementById('messageForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const content = e.target.content.value.trim();
-      const pathParts = window.location.pathname.split('/');
-      const handle = pathParts[2]; // ['', 'f', 'meekbill', ...]
-        console.log(handle)
-      const res = await fetch(`/api/v1/profiles/${handle}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-      });
+      const messageEl = document.getElementById('message');
 
-      if (res.ok) {
-        window.location.href = `/f/${handle}/sent`;
-      } else {
-        alert('Failed to send message');
+      // Clear previous message
+      messageEl.className = 'message';
+      messageEl.textContent = '';
+      messageEl.style.display = 'none';
+
+      if (!content) {
+        showMessage('Message cannot be empty.', 'error');
+        return;
+      }
+
+      // Extract handle from path: /f/meekbill → "meekbill"
+      const pathParts = window.location.pathname.split('/');
+      const handle = pathParts[2];
+      if (!handle) {
+        showMessage('Invalid profile link.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/profiles/${handle}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+
+        if (res.ok) {
+          window.location.href = `/f/${handle}/sent`;
+        } else {
+          let errorMsg = 'Failed to send message.';
+          try {
+            const err = await res.json();
+            errorMsg = err.message || err.error || errorMsg;
+          } catch (e) {
+            errorMsg = `Error: ${res.status} ${res.statusText}`;
+          }
+          showMessage(errorMsg, 'error');
+        }
+      } catch (err) {
+        showMessage('Network error. Is the server running?', 'error');
       }
     });
+
+    function showMessage(text, type) {
+      const el = document.getElementById('message');
+      el.className = `message ${type}`;
+      el.textContent = text;
+      el.style.display = 'block';
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   </script>
 </body>
 </html>
