@@ -1,0 +1,54 @@
+<!-- web/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brutal — Create Your Link</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 60px auto; padding: 0 20px; }
+    h1 { text-align: center; margin-bottom: 30px; }
+    input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+    button { width: 100%; padding: 12px; background: #000; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    button:hover { background: #333; }
+    .result { margin-top: 20px; padding: 12px; background: #f0f0f0; border-radius: 8px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>🔥 Brutal</h1>
+  <p>Create your anonymous feedback link</p>
+  <form id="createForm">
+    <input type="text" id="handle" placeholder="Your username (e.g., meekbill)" required minlength="3" />
+    <input type="text" id="title" placeholder="Prompt (e.g., Ask me anything!)" required />
+    <button type="submit">Create Link</button>
+  </form>
+  <div id="result" class="result" style="display:none;"></div>
+
+  <script>
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const handle = document.getElementById('handle').value.trim();
+      const title = document.getElementById('title').value.trim();
+
+      const res = await fetch('/api/v1/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle, title, description: '' })
+      });
+
+      if (res.ok) {
+        const profile = await res.json();
+        const link = `${window.location.origin}/f/${profile.Handle}`;
+        document.getElementById('result').innerHTML = `
+          <strong>Your link is ready!</strong><br>
+          <a href="/f/${profile.Handle}" target="_blank">${link}</a><br>
+          Share this with friends!
+        `;
+        document.getElementById('result').style.display = 'block';
+      } else {
+        alert('Failed to create profile');
+      }
+    });
+  </script>
+</body>
+</html>

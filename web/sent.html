@@ -1,0 +1,25 @@
+<!-- web/sent.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sent!</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 60px 20px; }
+    h2 { margin-bottom: 20px; }
+    a { color: #000; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h2>Message sent! 💬</h2>
+  <p>Go back to <a id="backLink" href="#">send another</a>.</p>
+  <script>
+    const url = new URL(window.location);
+    const handle = url.searchParams.get('handle');
+    if (handle) {
+      document.getElementById('backLink').href = `/f/${handle}`;
+    }
+  </script>
+</body>
+</html>

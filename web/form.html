@@ -1,0 +1,44 @@
+<!-- web/form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Send to {{.Handle}}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 60px auto; padding: 0 20px; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; margin: 10px 0; }
+    button { width: 100%; padding: 12px; background: #000; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    button:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <h1>Send a message to {{.Handle}}</h1>
+  <form id="messageForm">
+    <textarea name="content" placeholder="Your anonymous message..." required></textarea>
+    <button type="submit">Send 💬</button>
+  </form>
+
+  <script>
+    document.getElementById('messageForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = e.target.content.value.trim();
+      const pathParts = window.location.pathname.split('/');
+      const handle = pathParts[2]; // ['', 'f', 'meekbill', ...]
+        console.log(handle)
+      const res = await fetch(`/api/v1/profiles/${handle}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+
+      if (res.ok) {
+        window.location.href = `/f/${handle}/sent`;
+      } else {
+        alert('Failed to send message');
+      }
+    });
+  </script>
+</body>
+</html>

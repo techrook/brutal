@@ -4,6 +4,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -43,9 +45,29 @@ func main() {
 	})
 
 	// Route
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello from " + cfg.AppName + " 💥 — Truth Hurts. Running in " + cfg.AppEnv + " mode."))
-	})
+// Serve static HTML files
+r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/index.html")
+})
+
+r.Get("/f/{handle}", func(w http.ResponseWriter, r *http.Request) {
+	handle := chi.URLParam(r, "handle")
+	log.Print(handle)
+	// Read form.html and inject handle (simple template)
+	data, _ := os.ReadFile("web/form.html")
+	html := strings.Replace(string(data), "{{.Handle}}", handle, 1)
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+})
+
+r.Get("/f/{handle}/sent", func(w http.ResponseWriter, r *http.Request) {
+	handle := chi.URLParam(r, "handle")
+	log.Print(handle)
+	data, _ := os.ReadFile("web/sent.html")
+	html := strings.Replace(string(data), "handle=", "handle="+handle, 1)
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+})
 
 	// Start server using config port
 	addr := ":" + cfg.ServerPort
