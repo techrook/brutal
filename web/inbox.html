@@ -38,14 +38,24 @@
     h1 {
       font-size: 1.8rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       color: #333;
     }
 
     .subtitle {
       color: #666;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
       font-size: 1.1rem;
+    }
+
+    .stats {
+      background: #f0f7ff;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 600;
+      color: #4a90e2;
     }
 
     .message-item {
@@ -54,7 +64,6 @@
       padding: 16px;
       margin-bottom: 16px;
       border-radius: 0 8px 8px 0;
-      position: relative;
     }
 
     .message-content {
@@ -72,6 +81,16 @@
       text-align: center;
       padding: 40px 20px;
       color: #888;
+      font-style: italic;
+    }
+
+    .error {
+      text-align: center;
+      padding: 30px;
+      color: #d32f2f;
+      background: #fdf2f2;
+      border-radius: 10px;
+      margin: 20px 0;
     }
 
     .back-link {
@@ -94,60 +113,75 @@
   </style>
 </head>
 <body>
-    <div class="container">
-        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
-          <h1>Your Inbox</h1>
-          <p style="color: #666; margin: 8px 0;">“{{.Title}}”</p>
-          
-          <!-- ✅ Shareable public link -->
-          <div style="background: #f0f7ff; padding: 12px; border-radius: 10px; margin-top: 12px; font-size: 0.95rem;">
-            <strong>📤 Share this link to get messages:</strong><br>
-            <a href="/f/{{.Handle}}" 
-               style="color: #4a90e2; word-break: break-all;"
-               target="_blank">
-              {{.Origin}}/f/{{.Handle}}
-            </a>
-          </div>
-        </div>
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+      <h1>Your Inbox</h1>
+      <p class="subtitle">“{{.Title}}”</p>
       
-        <!-- Messages list -->
-        <div id="messages">Loading...</div>
-      
-        <a href="/" style="display: block; margin-top: 24px; color: #ff4b2b; text-decoration: none; font-weight: 600;">
-          ← Create another profile
+      <!-- Shareable public link -->
+      <div style="background: #f0f7ff; padding: 12px; border-radius: 10px; margin-top: 12px; font-size: 0.95rem;">
+        <strong>📤 Share this link to get messages:</strong><br>
+        <a href="/f/{{.Handle}}" 
+           style="color: #4a90e2; word-break: break-all;"
+           target="_blank">
+          {{.Origin}}/f/{{.Handle}}
         </a>
       </div>
+    </div>
+
+    <!-- Message count -->
+    <div class="stats" id="stats">Loading messages...</div>
+
+    <!-- Messages list -->
+    <div id="messages"></div>
+
+    <a href="/" style="display: block; margin-top: 24px; color: #ff4b2b; text-decoration: none; font-weight: 600;">
+      ← Create another profile
+    </a>
+  </div>
 
   <script>
-    // Extract handle from URL path
     const pathParts = window.location.pathname.split('/');
     const handle = pathParts[2];
 
+    const statsEl = document.getElementById('stats');
+    const messagesEl = document.getElementById('messages');
+
     if (!handle) {
-      document.getElementById('messages').innerHTML = '<div class="empty">Invalid link</div>';
+      statsEl.textContent = 'Invalid profile';
+      messagesEl.innerHTML = '<div class="error">No handle provided.</div>';
     } else {
-      fetch(`/api/v1/profiles/${handle}/messages`)
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to load messages');
-          return res.json();
-        })
-        .then(messages => {
-          const container = document.getElementById('messages');
-          if (messages.length === 0) {
-            container.innerHTML = '<div class="empty">No messages yet. Share your link!</div>';
-          } else {
-            container.innerHTML = messages.map(msg => `
-              <div class="message-item">
-                <div class="message-content">${msg.Content}</div>
-                <div class="message-meta">Received ${new Date(msg.CreatedAt).toLocaleString()}</div>
-              </div>
-            `).join('');
-          }
-        })
-        .catch(err => {
-          document.getElementById('messages').innerHTML = '<div class="empty">Failed to load messages. Is the server running?</div>';
-        });
+        fetch(`/api/v1/profiles/${handle}/messages`)
+  .then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  })
+  .then(messages => {
+    // Handle null, undefined, or non-array
+    if (!Array.isArray(messages)) {
+      messages = [];
     }
+
+    const count = messages.length;
+    statsEl.textContent = count === 1 ? '1 message' : `${count} messages`;
+
+    if (count === 0) {
+      messagesEl.innerHTML = '<div class="empty">No messages yet. Share your link!</div>';
+    } else {
+      messagesEl.innerHTML = messages.map(msg => `
+        <div class="message-item">
+          <div class="message-content">${msg.Content}</div>
+          <div class="message-meta">Received ${new Date(msg.CreatedAt).toLocaleString()}</div>
+        </div>
+      `).join('');
+    }
+  })
+  .catch(err => {
+    statsEl.textContent = 'Error loading';
+    messagesEl.innerHTML = '<div class="error">Could not load messages. Please refresh or check your connection.</div>';
+    console.error('Fetch error:', err);
+  });
+}
   </script>
 </body>
 </html>

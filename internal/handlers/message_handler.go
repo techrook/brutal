@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
+	"brutal/internal/models"
 	"brutal/internal/services"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type MessageHandler struct {
@@ -101,12 +103,16 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	messages, err := h.messageService.GetMessagesByProfile(profile.ID)
-	if err != nil {
-		// Log real error in production
-		writeError(w, http.StatusInternalServerError, "Failed to fetch messages")
-		return
-	}
+    if err != nil {
+        writeError(w, http.StatusInternalServerError, "Failed to fetch messages")
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(messages)
+    // Ensure it's never nil
+    if messages == nil {
+        messages = []*models.Message{}
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(messages) // always []
 }
