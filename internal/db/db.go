@@ -14,14 +14,15 @@ var DB *sqlx.DB
 
 func InitDB(cfg *config.Config) {
 
-	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBName,
-	)
+	// Build connection string WITH SSL
+connStr := fmt.Sprintf(
+	"host=%s port=%s user=%s password=%s dbname=%s sslmode=require",
+	cfg.DBHost,
+	cfg.DBPort,
+	cfg.DBUser,
+	cfg.DBPassword,
+	cfg.DBName,
+)
 
 	// Open connection
 	var err error

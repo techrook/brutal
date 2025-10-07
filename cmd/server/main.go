@@ -130,8 +130,14 @@ r.Get("/inbox/{handle}", func(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(html))
 })
 
+port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+
 	// Start server using config port
-	addr := ":" + cfg.ServerPort
+	addr := ":" + port
 	log.Printf("🚀 %s server running on http://localhost%s (env: %s)", cfg.AppName, addr, cfg.AppEnv)
 	log.Fatal(http.ListenAndServe(addr, r))
 }
