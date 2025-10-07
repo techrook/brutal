@@ -125,42 +125,52 @@
   </div>
 
   <script>
-    document.getElementById('createForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const handle = document.getElementById('handle').value.trim();
-  const title = document.getElementById('title').value.trim();
-
-  if (!handle || handle.length < 3) {
-    showMessage('Username must be at least 3 characters.', 'error');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/v1/profiles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handle, title, description: '' })
-    });
-
-    if (res.ok) {
-      const profile = await res.json();
-      // ✅ GO STRAIGHT TO INBOX
-      window.location.href = `/inbox/${profile.Handle}`;
-    } else {
-      let errorMsg = 'Failed to create profile.';
-      try {
-        const err = await res.json();
-        errorMsg = err.message || err.error || errorMsg;
-      } catch (e) {
-        errorMsg = `Error: ${res.status} ${res.statusText}`;
+    document.getElementById('messageForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = e.target.content.value.trim();
+      const messageEl = document.getElementById('message');
+  
+      messageEl.className = 'message';
+      messageEl.textContent = '';
+      messageEl.style.display = 'none';
+  
+      if (!content) {
+        showMessage('Message cannot be empty.', 'error');
+        return;
       }
-      showMessage(errorMsg, 'error');
-    }
-  } catch (err) {
-    showMessage('Network error. Is the server running?', 'error');
-  }
-});
-
+  
+      // Extract handle from URL path: /f/meekbill → "meekbill"
+      const pathParts = window.location.pathname.split('/');
+      const handle = pathParts[2];
+      if (!handle) {
+        showMessage('Invalid profile link.', 'error');
+        return;
+      }
+  
+      try {
+        const res = await fetch(`/api/v1/profiles/${handle}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+  
+        if (res.ok) {
+          window.location.href = `/f/${handle}/sent`;
+        } else {
+          let errorMsg = 'Failed to send message.';
+          try {
+            const err = await res.json();
+            errorMsg = err.message || err.error || errorMsg;
+          } catch (e) {
+            errorMsg = `Error: ${res.status} ${res.statusText}`;
+          }
+          showMessage(errorMsg, 'error');
+        }
+      } catch (err) {
+        showMessage('Network error. Is the server running?', 'error');
+      }
+    });
+  
     function showMessage(text, type) {
       const el = document.getElementById('message');
       el.className = `message ${type}`;
