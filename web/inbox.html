@@ -1,0 +1,153 @@
+<!-- web/inbox.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inbox — Brutal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 600px;
+      padding: 30px;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 1.1rem;
+    }
+
+    .message-item {
+      background: #f9f9f9;
+      border-left: 4px solid #667eea;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-radius: 0 8px 8px 0;
+      position: relative;
+    }
+
+    .message-content {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .message-meta {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+          <h1>Your Inbox</h1>
+          <p style="color: #666; margin: 8px 0;">“{{.Title}}”</p>
+          
+          <!-- ✅ Shareable public link -->
+          <div style="background: #f0f7ff; padding: 12px; border-radius: 10px; margin-top: 12px; font-size: 0.95rem;">
+            <strong>📤 Share this link to get messages:</strong><br>
+            <a href="/f/{{.Handle}}" 
+               style="color: #4a90e2; word-break: break-all;"
+               target="_blank">
+              {{.Origin}}/f/{{.Handle}}
+            </a>
+          </div>
+        </div>
+      
+        <!-- Messages list -->
+        <div id="messages">Loading...</div>
+      
+        <a href="/" style="display: block; margin-top: 24px; color: #ff4b2b; text-decoration: none; font-weight: 600;">
+          ← Create another profile
+        </a>
+      </div>
+
+  <script>
+    // Extract handle from URL path
+    const pathParts = window.location.pathname.split('/');
+    const handle = pathParts[2];
+
+    if (!handle) {
+      document.getElementById('messages').innerHTML = '<div class="empty">Invalid link</div>';
+    } else {
+      fetch(`/api/v1/profiles/${handle}/messages`)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to load messages');
+          return res.json();
+        })
+        .then(messages => {
+          const container = document.getElementById('messages');
+          if (messages.length === 0) {
+            container.innerHTML = '<div class="empty">No messages yet. Share your link!</div>';
+          } else {
+            container.innerHTML = messages.map(msg => `
+              <div class="message-item">
+                <div class="message-content">${msg.Content}</div>
+                <div class="message-meta">Received ${new Date(msg.CreatedAt).toLocaleString()}</div>
+              </div>
+            `).join('');
+          }
+        })
+        .catch(err => {
+          document.getElementById('messages').innerHTML = '<div class="empty">Failed to load messages. Is the server running?</div>';
+        });
+    }
+  </script>
+</body>
+</html>

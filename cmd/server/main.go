@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -89,6 +90,42 @@ r.Get("/f/{handle}/sent", func(w http.ResponseWriter, r *http.Request) {
 	log.Print(handle)
 	data, _ := os.ReadFile("web/sent.html")
 	html := strings.Replace(string(data), "handle=", "handle="+handle, 1)
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+})
+
+r.Get("/inbox/{handle}", func(w http.ResponseWriter, r *http.Request) {
+	handle := chi.URLParam(r, "handle")
+	if handle == "" {
+		http.Error(w, "Handle required", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch profile to get title
+	profile, err := profileService.GetProfileByHandle(handle)
+	if err != nil {
+		http.Error(w, "Profile not found", http.StatusNotFound)
+		return
+	}
+
+	// Read inbox template
+	data, err := os.ReadFile("web/inbox.html")
+	if err != nil {
+		http.Error(w, "Template not found", http.StatusInternalServerError)
+		return
+	}
+// Replace placeholders
+	html := string(data)
+	html = strings.Replace(html, "{{.Handle}}", profile.Handle, -1)
+	html = strings.Replace(html, "{{.Title}}", profile.Title, -1)
+	// ✅ Inject origin (e.g., http://localhost:8080 or https://brutal.app)
+	origin := fmt.Sprintf("%s://%s", r.URL.Scheme, r.Host)
+	if origin == ":///" || origin == "://localhost" { // fallback for local dev
+		origin = "http://localhost:8080"
+	}
+	html = strings.Replace(html, "{{.Origin}}", origin, -1)
+	
+
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(html))
 })

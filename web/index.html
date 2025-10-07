@@ -166,14 +166,10 @@
         });
 
         if (res.ok) {
-          const profile = await res.json();
-          const link = `${window.location.origin}/f/${profile.Handle}`;
-          showMessage(`
-            <strong>✅ Your link is ready!</strong><br>
-            <a href="/f/${profile.Handle}" target="_blank">${link}</a><br>
-            Share it and get real feedback!
-          `, 'success');
-        } else {
+  const profile = await res.json();
+  // ✅ REDIRECT to inbox — this is the key change
+  window.location.href = `/inbox/${profile.Handle}`;
+} else {
           let errorMsg = 'Failed to create profile.';
           try {
             const err = await res.json();
