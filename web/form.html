@@ -17,7 +17,7 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+      background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -36,12 +36,18 @@
     }
 
     h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      margin-bottom: 12px;
-      background: linear-gradient(90deg, #ff416c, #ff4b2b);
-      -webkit-background-clip: text;
-      background-clip: text;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .prompt {
+      font-size: 1.2rem;
+      color: #ff4b2b;
+      font-weight: 600;
+      margin-bottom: 24px;
+      line-height: 1.4;
     }
 
     textarea {
@@ -65,7 +71,7 @@
     button {
       width: 100%;
       padding: 14px;
-      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      background: linear-gradient(90deg, #4a90e2, #5e72e4);
       color: white;
       border: none;
       border-radius: 14px;
@@ -74,7 +80,7 @@
       font-family: inherit;
       cursor: pointer;
       transition: opacity 0.2s;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     button:hover {
@@ -110,6 +116,7 @@
 <body>
   <div class="container">
     <h1>Send a message to {{.Handle}}</h1>
+    <div class="prompt">“{{.Title}}”</div>
     <form id="messageForm">
       <textarea name="content" placeholder="Your anonymous message... Be honest, be kind 💬" required></textarea>
       <button type="submit">Send Truth</button>
@@ -123,7 +130,6 @@
       const content = e.target.content.value.trim();
       const messageEl = document.getElementById('message');
 
-      // Clear previous message
       messageEl.className = 'message';
       messageEl.textContent = '';
       messageEl.style.display = 'none';
@@ -133,7 +139,6 @@
         return;
       }
 
-      // Extract handle from path: /f/meekbill → "meekbill"
       const pathParts = window.location.pathname.split('/');
       const handle = pathParts[2];
       if (!handle) {

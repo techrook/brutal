@@ -1,16 +1,17 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-
 	"brutal/internal/services"
 )
 
-type MessageHandler struct{
+type MessageHandler struct {
 	messageService *services.MessageService
 	profileService *services.ProfileService
 }
@@ -22,13 +23,25 @@ func NewMessageHandler() *MessageHandler {
 	}
 }
 
+// ErrorResponse matches the one in profile_handler.go
+
+
 func (h *MessageHandler) PostMessage(w http.ResponseWriter, r *http.Request) {
 	handle := chi.URLParam(r, "handle")
+	if handle == "" {
+		writeError(w, http.StatusBadRequest, "Handle is required")
+		return
+	}
 
 	// 1. Validate profile exists
 	profile, err := h.profileService.GetProfileByHandle(handle)
 	if err != nil {
-		http.Error(w, "profile not found", http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "Profile not found. Did you type the username correctly?")
+			return
+		}
+		// Log real error in production
+		writeError(w, http.StatusInternalServerError, "Could not verify profile. Please try again.")
 		return
 	}
 
@@ -37,12 +50,17 @@ func (h *MessageHandler) PostMessage(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
 
-	if req.Content == "" {
-		http.Error(w, "content is required", http.StatusBadRequest)
+	content := strings.TrimSpace(req.Content)
+	if content == "" {
+		writeError(w, http.StatusBadRequest, "Message cannot be empty")
+		return
+	}
+	if len(content) > 1000 {
+		writeError(w, http.StatusBadRequest, "Message is too long (max 1000 characters)")
 		return
 	}
 
@@ -53,30 +71,42 @@ func (h *MessageHandler) PostMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Save message
-	msg, err := h.messageService.CreateMessage(profile.ID, req.Content, ip, r.UserAgent())
+	msg, err := h.messageService.CreateMessage(profile.ID, content, ip, r.UserAgent())
 	if err != nil {
-		http.Error(w, "failed to save message", http.StatusInternalServerError)
+		// Log real error in production
+		writeError(w, http.StatusInternalServerError, "Failed to send message. Please try again.")
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(msg)
 }
 
 func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	handle := chi.URLParam(r, "handle")
-	profile, err := h.profileService.GetProfileByHandle(handle)
-	if err != nil {
-		http.Error(w, "profile not found", http.StatusNotFound)
+	if handle == "" {
+		writeError(w, http.StatusBadRequest, "Handle is required")
 		return
 	}
 
+	profile, err := h.profileService.GetProfileByHandle(handle)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "Profile not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Could not load messages. Please try again.")
+		return
+	}
 
 	messages, err := h.messageService.GetMessagesByProfile(profile.ID)
 	if err != nil {
-		http.Error(w, "failed to fetch messages", http.StatusInternalServerError)
+		// Log real error in production
+		writeError(w, http.StatusInternalServerError, "Failed to fetch messages")
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
 }

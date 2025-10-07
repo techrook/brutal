@@ -14,6 +14,7 @@ import (
 	"brutal/internal/config"
 	"brutal/internal/db"
 	"brutal/internal/handlers"
+	"brutal/internal/services"
 )
 
 func main() {
@@ -35,6 +36,9 @@ func main() {
 	profileHandler := handlers.NewProfileHandler()
 	messageHandler := handlers.NewMessageHandler()
 
+	//Services
+	profileService := services.NewProfileService()
+
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/profiles", profileHandler.CreateProfile)
@@ -52,10 +56,30 @@ r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 r.Get("/f/{handle}", func(w http.ResponseWriter, r *http.Request) {
 	handle := chi.URLParam(r, "handle")
-	log.Print(handle)
-	// Read form.html and inject handle (simple template)
-	data, _ := os.ReadFile("web/form.html")
-	html := strings.Replace(string(data), "{{.Handle}}", handle, 1)
+	if handle == "" {
+		http.Error(w, "Handle required", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch profile to get title/prompt
+	profile, err := profileService.GetProfileByHandle(handle)
+	if err != nil {
+		http.Error(w, "Profile not found", http.StatusNotFound)
+		return
+	}
+
+	// Read HTML template
+	data, err := os.ReadFile("web/form.html")
+	if err != nil {
+		http.Error(w, "Template not found", http.StatusInternalServerError)
+		return
+	}
+
+	// Replace placeholders
+	html := string(data)
+	html = strings.Replace(html, "{{.Handle}}", profile.Handle, -1)
+	html = strings.Replace(html, "{{.Title}}", profile.Title, -1)
+
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(html))
 })
